@@ -52,8 +52,9 @@ Use the ThinkPad host name on the ThinkPad instead.
 
 The desktop mounts two shared NTFS drives in `hosts/desktop/default.nix`:
 
-- `/mnt/games` — 1.8 TB USB SSD for the shared Steam library
-- `/mnt/bulk` — 1 TB HDD for bulk data
+- `/mnt/external-storage` — 1.8 TB USB SSD (`External Storage`) for the
+  shared Steam library
+- `/mnt/cold-storage` — 1 TB HDD (`Cold Storage`) for bulk data
 
 They use the in-kernel `ntfs3` driver with `nofail` and automount, so a
 missing drive cannot block boot. Formatting, mount options, Windows Fast

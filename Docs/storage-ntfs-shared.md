@@ -4,10 +4,12 @@ This machine has two NTFS drives shared with Windows:
 
 | Mount | Device | UUID | Purpose |
 | --- | --- | --- | --- |
-| `/mnt/games` | `/dev/sdb1` | `A810C8EA10C8C114` | 1.8 TB USB SSD, Steam/game storage |
-| `/mnt/bulk` | `/dev/sda1` | `78E2938CE2934CEE` | 1 TB HDD, bulk data (`Cold Storage`) |
+| `/mnt/external-storage` | `/dev/sdb1` | `A810C8EA10C8C114` | 1.8 TB USB SSD, label `External Storage`, Steam/game storage |
+| `/mnt/cold-storage` | `/dev/sda1` | `78E2938CE2934CEE` | 1 TB HDD, label `Cold Storage`, bulk data |
 
-The mount definitions live in `nixos/hosts/desktop/default.nix`.
+The mount definitions live in `nixos/hosts/desktop/default.nix`. Mount points
+are named after the Windows volume labels (`External Storage`, `Cold Storage`)
+so it is obvious which drive is which.
 
 ## Why `ntfs3` and not `ntfs-3g`
 
@@ -55,7 +57,7 @@ Always mount by UUID, not `/dev/sdX`, because device letters change.
 The pattern used for both drives:
 
 ```nix
-fileSystems."/mnt/games" = {
+fileSystems."/mnt/external-storage" = {
   device = "/dev/disk/by-uuid/A810C8EA10C8C114";
   fsType = "ntfs3";
   options = [
@@ -84,8 +86,8 @@ What the options do:
 After a switch, access the directory once to trigger the mount:
 
 ```bash
-ls /mnt/games
-findmnt /mnt/games
+ls /mnt/external-storage
+findmnt /mnt/external-storage
 ```
 
 ## udiskie vs declarative mounts
@@ -120,14 +122,14 @@ Steam on Linux does not officially support NTFS libraries. With `ntfs3` it
 often works, but keep these points in mind:
 
 1. Add the library on Linux: **Steam → Settings → Storage → Add Drive**, then
-   pick `/mnt/games/Games/Steam`.
+   pick `/mnt/external-storage/Games/Steam`.
 2. **Proton prefixes are the usual breakage.** Keep `compatdata` on Btrfs and
    symlink it into the NTFS library:
 
    ```bash
-   rm -rf /mnt/games/Games/Steam/steamapps/compatdata
+   rm -rf /mnt/external-storage/Games/Steam/steamapps/compatdata
    ln -s ~/.local/share/Steam/steamapps/compatdata \
-         /mnt/games/Games/Steam/steamapps/compatdata
+         /mnt/external-storage/Games/Steam/steamapps/compatdata
    ```
 
    Adjust the path if your library folder has a different name.
@@ -139,7 +141,7 @@ often works, but keep these points in mind:
 After formatting, check that the filesystem fills the partition:
 
 ```bash
-df -h /mnt/bulk
+df -h /mnt/cold-storage
 sudo ntfsresize --info --force /dev/sda1
 ```
 
@@ -147,9 +149,9 @@ If `Current volume size` is smaller than `Current device size`, growing is
 non-destructive and keeps the data, but back up anything important first:
 
 ```bash
-sudo umount /mnt/bulk
+sudo umount /mnt/cold-storage
 sudo ntfsresize /dev/sda1
-ls /mnt/bulk                                # remount via automount
+ls /mnt/cold-storage                                # remount via automount
 ```
 
 Never shrink an NTFS filesystem while it is mounted.
@@ -166,7 +168,7 @@ Boot Windows and shut it down properly with Fast Startup disabled. As a last
 resort from Linux:
 
 ```bash
-sudo umount /mnt/bulk
+sudo umount /mnt/cold-storage
 sudo ntfsfix /dev/sda1
 ```
 
@@ -175,15 +177,15 @@ sudo ntfsfix /dev/sda1
 Check the mount options include `uid=1000,gid=100,umask=022`:
 
 ```bash
-findmnt -no OPTIONS /mnt/bulk
+findmnt -no OPTIONS /mnt/cold-storage
 ```
 
 ### Automount does not trigger
 
 ```bash
 systemctl status mnt-games.automount mnt-bulk.automount
-ls /mnt/games
-findmnt /mnt/games
+ls /mnt/external-storage
+findmnt /mnt/external-storage
 ```
 
 ### `nixos-rebuild switch` fails with "Unit ...mount is masked"
@@ -204,7 +206,7 @@ Then retry the switch.
 ```bash
 udisksctl unmount -b /dev/sdb1
 # or
-sudo umount /mnt/games
+sudo umount /mnt/external-storage
 ```
 
 ## Safety notes

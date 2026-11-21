@@ -22,7 +22,7 @@ in
   # Shared NTFS storage, mounted with the in-kernel ntfs3 driver.
   # nofail keeps boot working if a drive is unplugged; automount mounts on
   # first access instead of blocking the boot.
-  fileSystems."/mnt/games" = {
+  fileSystems."/mnt/external-storage" = {
     device = "/dev/disk/by-uuid/A810C8EA10C8C114";
     fsType = "ntfs3";
     options = [
@@ -36,7 +36,7 @@ in
     ];
   };
 
-  fileSystems."/mnt/bulk" = {
+  fileSystems."/mnt/cold-storage" = {
     device = "/dev/disk/by-uuid/78E2938CE2934CEE";
     fsType = "ntfs3";
     options = [
