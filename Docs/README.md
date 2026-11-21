@@ -20,3 +20,7 @@ Notes and session logs for this NixOS configuration.
 - [Multi-machine NixOS layout](multi-machine-nixos.md)
   — desktop/ThinkPad host separation, shared modules, hardware scans,
   `/etc/nixos` stow flow, and adding another machine.
+- [Shared NTFS storage](storage-ntfs-shared.md)
+  — declarative mounts for the game SSD and bulk HDD, GParted NTFS formatting,
+  `ntfs3` mount options, Windows Fast Startup, Steam/Proton caveats, growing
+  the filesystem, and recovery steps.

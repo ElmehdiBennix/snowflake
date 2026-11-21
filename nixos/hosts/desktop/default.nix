@@ -19,6 +19,37 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Shared NTFS storage, mounted with the in-kernel ntfs3 driver.
+  # nofail keeps boot working if a drive is unplugged; automount mounts on
+  # first access instead of blocking the boot.
+  fileSystems."/mnt/games" = {
+    device = "/dev/disk/by-uuid/A810C8EA10C8C114";
+    fsType = "ntfs3";
+    options = [
+      "uid=1000"
+      "gid=100"
+      "umask=022"
+      "iocharset=utf8"
+      "nofail"
+      "x-systemd.automount"
+      "x-systemd.device-timeout=10s"
+    ];
+  };
+
+  fileSystems."/mnt/bulk" = {
+    device = "/dev/disk/by-uuid/78E2938CE2934CEE";
+    fsType = "ntfs3";
+    options = [
+      "uid=1000"
+      "gid=100"
+      "umask=022"
+      "iocharset=utf8"
+      "nofail"
+      "x-systemd.automount"
+      "x-systemd.device-timeout=10s"
+    ];
+  };
+
   # Desktop cache/swap tuning.
   zramSwap = {
     enable = true;

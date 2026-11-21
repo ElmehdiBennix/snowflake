@@ -14,8 +14,6 @@ nixos/
 │   └── thinkpad/
 │       ├── default.nix       # Intel/AMD ThinkPad host rules
 │       └── hardware-configuration.nix  # Placeholder until scanned
-├── hardware/
-│   └── desktop.nix           # Copied desktop hardware scan
 └── modules/
     ├── core.nix              # Shared users, locale, networking, Nix, PipeWire
     ├── desktop.nix           # Shared greetd/Niri/GTK/Qt desktop shell
@@ -49,6 +47,18 @@ sudo nixos-rebuild switch --flake .#desktop
 ```
 
 Use the ThinkPad host name on the ThinkPad instead.
+
+## Storage
+
+The desktop mounts two shared NTFS drives in `hosts/desktop/default.nix`:
+
+- `/mnt/games` — 1.8 TB USB SSD for the shared Steam library
+- `/mnt/bulk` — 1 TB HDD for bulk data
+
+They use the in-kernel `ntfs3` driver with `nofail` and automount, so a
+missing drive cannot block boot. Formatting, mount options, Windows Fast
+Startup, Steam/Proton caveats, and recovery are covered in
+`Docs/storage-ntfs-shared.md`.
 
 ## Adding a machine
 

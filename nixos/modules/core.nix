@@ -20,6 +20,10 @@
   # SSD maintenance.
   services.fstrim.enable = true;
 
+  # Kernel NTFS support so Windows-formatted drives mount read-write.
+  # On this kernel NixOS also pulls in ntfs3g for the mount helper.
+  boot.supportedFilesystems = [ "ntfs" ];
+
   # Locale and timezone are shared defaults; a host can override them.
   time.timeZone = "Europe/Paris";
   i18n.defaultLocale = "en_US.UTF-8";
