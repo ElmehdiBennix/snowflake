@@ -6,6 +6,7 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     hermes-agent.url = "github:NousResearch/hermes-agent";
+    spicetify-nix.url = "github:Gerg-L/spicetify-nix";
   };
 
   outputs =
@@ -15,6 +16,7 @@
       nixpkgs-stable,
       zen-browser,
       hermes-agent,
+      spicetify-nix,
       ...
     }:
     let
@@ -25,7 +27,7 @@
       };
 
       commonSpecialArgs = {
-        inherit stable zen-browser hermes-agent;
+        inherit stable zen-browser hermes-agent spicetify-nix;
       };
     in
     {
@@ -35,6 +37,7 @@
         modules = [
           ./hosts/desktop/default.nix
           hermes-agent.nixosModules.default
+          spicetify-nix.nixosModules.spicetify
         ];
       };
 

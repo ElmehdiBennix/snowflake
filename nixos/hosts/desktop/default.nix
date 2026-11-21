@@ -1,8 +1,9 @@
 # Desktop host: AMD Ryzen + NVIDIA RTX 3090.
-{ config, pkgs, zen-browser, ... }:
+{ config, pkgs, zen-browser, spicetify-nix, ... }:
 
 let
   zen-browser-pkg = zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  spicePkgs = spicetify-nix.legacyPackages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   imports = [
@@ -33,6 +34,35 @@ in
     "net.ipv4.tcp_congestion_control" = "bbr";
   };
 
+  # CachyOS-style responsiveness: auto-nice background work with the CachyOS
+  # ruleset, and load the gaming-oriented sched_ext scheduler at boot.
+  services.ananicy = {
+    enable = true;
+    package = pkgs.ananicy-cpp;
+    rulesProvider = pkgs.ananicy-rules-cachyos;
+  };
+
+  systemd.services.scx-lavd = {
+    description = "scx_lavd sched_ext CPU scheduler";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.scx.rustscheds}/bin/scx_lavd";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+  };
+
+  # Power-profile switching for Noctalia and desktop power modes.
+  services.tuned = {
+    enable = true;
+    ppdSupport = true;
+  };
+
+  # DDC/CI monitor brightness and settings via ddcutil.
+  hardware.i2c.enable = true;
+
   users.users.rambeau.extraGroups = [
     "networkmanager"
     "wheel"
@@ -57,16 +87,67 @@ in
     nirius
     opencode
     vicinae
-    spotify
-    spicetify-cli
     zen-browser-pkg
   ];
+
+  # Spotify is installed by the spicetify-nix module as a patched package.
+  # Do not add pkgs.spotify or spicetify-cli to systemPackages.
+  programs.spicetify = {
+    enable = true;
+
+    # Add themes/extensions from the spicetify-nix package set, for example:
+    # theme = spicePkgs.themes.catppuccin;
+    # colorScheme = "mocha";
+    # enabledExtensions = with spicePkgs.extensions; [
+    #   adblockify
+    #   hidePodcasts
+    #   shuffle
+    # ];
+  };
 
   programs.gamemode.settings = {
     general.renice = 10;
     cpu = {
       desiredgov = "performance";
       defaultgov = "powersave";
+    };
+  };
+
+  # Hermes Agent: native service backed by the local llama-swap endpoint.
+  services.hermes-agent = {
+    enable = true;
+    addToSystemPackages = true;
+
+    settings = {
+      model = {
+        default = "llama/llama-swap";
+        base_url = "http://127.0.0.1:9292/v1";
+      };
+      toolsets = [ "all" ];
+    };
+
+    backend = {
+      mode = "dashboard";
+      host = "127.0.0.1";
+      port = 9119;
+    };
+
+    hermesHomeFiles = {
+      "SOUL.md" = "You are a helpful local AI operator. Prefer local tools and never expose credentials.";
+    };
+  };
+
+  # Realtek ALC1200A reports the front headphone jack as plugged, and the default
+  # "Auto-Mute Mode" then disables the rear green Line Out pin, silencing the
+  # speakers. Keep both outputs active.
+  systemd.services.alsa-disable-automute = {
+    description = "Disable HDA auto-mute so the rear Line Out stays active";
+    wantedBy = [ "sound.target" ];
+    after = [ "sound.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.alsa-utils}/bin/amixer -c Generic sset 'Auto-Mute Mode' Disabled";
     };
   };
 }

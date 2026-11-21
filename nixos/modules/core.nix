@@ -39,6 +39,12 @@
   # NetworkManager is used by the desktop, laptop, and TUI tools.
   networking.networkmanager.enable = true;
 
+  # Keyboard layout for X11-compatible clients and login/session tools.
+  services.xserver.xkb = {
+    layout = "us";
+    variant = "";
+  };
+
   # Keep the firewall explicitly enabled for the safer shared baseline.
   networking.firewall.enable = true;
 
@@ -55,6 +61,20 @@
 
   # Real-time audio scheduling support.
   security.rtkit.enable = true;
+
+  # Track battery, AC, and suspend/resume status for desktop and laptop controls.
+  services.upower.enable = true;
+
+  # Run unpatched dynamic binaries from foreign toolchains.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib # libstdc++
+      zlib # compression
+      openssl # crypto
+      glib # GNOME/GTK utility library
+    ];
+  };
 
   # PipeWire shared by all desktop/laptop hosts.
   services.pipewire = {
