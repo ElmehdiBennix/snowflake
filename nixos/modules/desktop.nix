@@ -102,7 +102,6 @@
     gparted
     ntfs3g # mkntfs/ntfsfix so GParted can create and repair NTFS
     keepassxc
-    nautilus
     onlyoffice-desktopeditors
     obs-studio
     stremio-linux-shell

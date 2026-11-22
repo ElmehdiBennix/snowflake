@@ -10,6 +10,7 @@ in
     ./hardware-configuration.nix
     ../../modules/core.nix
     ../../modules/desktop.nix
+    ../../modules/desktop-services.nix
     ../../modules/hardware-amd.nix
     ../../modules/hardware-nvidia.nix
   ];
@@ -102,7 +103,6 @@ in
     "i2c"
   ];
 
-  # Desktop features that are safe to keep host-specific.
   virtualisation.docker.enable = true;
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
@@ -112,6 +112,7 @@ in
   programs.steam.extraCompatPackages = [ pkgs.proton-ge-bin ];
 
   programs.gamemode.enable = true;
+
   environment.systemPackages = with pkgs; [
     hydralauncher
     nirimon
@@ -123,17 +124,18 @@ in
 
   # Spotify is installed by the spicetify-nix module as a patched package.
   # Do not add pkgs.spotify or spicetify-cli to systemPackages.
+  # Themes and extensions are applied at build time: the patched Spotify lives
+  # read-only in the Nix store, so there is no in-app installer. To add more,
+  # pick names from `spicePkgs.extensions` / `spicePkgs.themes` and rebuild.
   programs.spicetify = {
     enable = true;
 
-    # Add themes/extensions from the spicetify-nix package set, for example:
-    # theme = spicePkgs.themes.catppuccin;
-    # colorScheme = "mocha";
-    # enabledExtensions = with spicePkgs.extensions; [
-    #   adblockify
-    #   hidePodcasts
-    #   shuffle
-    # ];
+    enabledExtensions = with spicePkgs.extensions; [
+      adblockify
+      hidePodcasts
+      keyboardShortcut
+      shuffle
+    ];
   };
 
   programs.gamemode.settings = {

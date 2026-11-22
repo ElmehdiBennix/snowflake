@@ -17,6 +17,8 @@ nixos/
 └── modules/
     ├── core.nix              # Shared users, locale, networking, Nix, PipeWire
     ├── desktop.nix           # Shared greetd/Niri/GTK/Qt desktop shell
+    ├── desktop-services.nix  # Device/file services: GVFS, Nautilus, KDE Connect,
+    │                         # Syncthing, Tailscale, Android tools
     ├── hardware-amd.nix      # AMD CPU microcode
     └── hardware-nvidia.nix   # NVIDIA/Container Toolkit graphics
 ```
