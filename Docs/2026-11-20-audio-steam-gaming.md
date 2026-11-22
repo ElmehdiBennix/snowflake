@@ -197,18 +197,87 @@ the next launch hang.
    ```bash
    steam &
    ```
-6. Verify the option was written:
+6. Verify the option was written. Steam games store it in `localconfig.vdf`:
    ```bash
    grep -n 'LaunchOptions' \
      ~/.local/share/Steam/userdata/*/config/localconfig.vdf
    ```
-   You should see a line containing your `gamescope … %command%` string.
+   Non-Steam shortcuts (added via `Games → Add a Non-Steam Game`) store it in
+   the binary `shortcuts.vdf`:
+   ```bash
+   grep -a -o 'LaunchOptions.\{0,80\}' \
+     ~/.local/share/Steam/userdata/*/config/shortcuts.vdf
+   ```
+   You should see your `gamescope … %command%` string after `LaunchOptions`.
 7. Launch the game. A `gamescope` window/compositor starting means the option
    took effect.
 
-If the `LaunchOptions` line is still missing after step 6, close Steam again and
-repeat — the config was overwritten because Steam was not fully closed at
-step 3.
+If the option is still missing after step 6, close Steam again and repeat — the
+config was overwritten because Steam was not fully closed at step 3.
+
+### “Steam changes need attention” — ProtonPlus refuses to apply
+
+**Symptom:** ProtonPlus shows:
+
+> Steam changes need attention
+> Steam is closed. ProtonPlus could not safely apply every pending change;
+> retry or start Steam manually after resolving the conflict.
+
+**Cause:** ProtonPlus keeps a receipt of every change it made while Steam was
+running in:
+
+```text
+~/.local/state/ProtonPlus/steam-restart-state.json
+```
+
+Each receipt records the target shortcut/app id and a fingerprint of the file
+at the time of the change. If Steam later rewrites `shortcuts.vdf` or
+`config.vdf`, or if the shortcut was removed and re-added (a new app id), the
+fingerprint no longer matches. ProtonPlus then refuses to overwrite the file
+rather than risk clobbering changes it did not make. On this machine the
+receipt referenced shortcut `3334041239` while the live ELDEN RING shortcut is
+`3602485341`, so it could never reconcile.
+
+**Fix** (Steam and ProtonPlus both closed):
+
+```bash
+# 1. Close Steam and ProtonPlus first.
+pkill -x protonplus; steam -shutdown
+
+# 2. Back up the receipt and the Steam config files.
+ts=$(date +%Y%m%d-%H%M%S)
+cp -a ~/.local/state/ProtonPlus/steam-restart-state.json \
+      ~/.local/state/ProtonPlus/steam-restart-state.json.bak-$ts
+cp -a ~/.local/share/Steam/userdata/*/config/shortcuts.vdf \
+      ~/.local/share/Steam/userdata/*/config/shortcuts.vdf.bak-$ts
+cp -a ~/.local/share/Steam/config/config.vdf \
+      ~/.local/share/Steam/config/config.vdf.bak-$ts
+
+# 3. Clear the stale pending-change receipts.
+jq '{schema_version: .schema_version, records: []}' \
+  ~/.local/state/ProtonPlus/steam-restart-state.json > /tmp/pp.json
+chmod 600 /tmp/pp.json
+mv /tmp/pp.json ~/.local/state/ProtonPlus/steam-restart-state.json
+```
+
+Then reopen ProtonPlus, apply the launch options with Steam still closed, ignore
+the restart prompt, and start Steam yourself (steps 1–7 above).
+
+To check the receipt without editing it:
+
+```bash
+jq -r '.records[] | [.kind, .subject_id,
+        .configuration_intent.path, .configuration_intent.desired]
+       | @tsv' ~/.local/state/ProtonPlus/steam-restart-state.json
+```
+
+Compare `subject_id` with the app id in `shortcuts.vdf`. For a non-Steam
+shortcut, the first 4 bytes after the `appid` key are a little-endian `int32`:
+
+```bash
+od -An -tu4 -j 21 -N 4 \
+  ~/.local/share/Steam/userdata/*/config/shortcuts.vdf
+```
 
 ---
 
