@@ -163,6 +163,53 @@ protontricks <appid> vcrun2022
 Steam → `Settings → Compatibility` → enable Steam Play for all titles, then
 pick **GE-Proton** per game under `Properties → Compatibility`.
 
+### ProtonPlus launch options (gamescope, MangoHud, …)
+
+**Symptom:** in ProtonPlus you add launch options such as `gamescope -W 2560
+-H 1440 -f -- %command%`, click apply, and it says Steam must restart. After
+restarting Steam the options are gone. ProtonPlus's own restart button can also
+hang with an error.
+
+**Cause:** ProtonPlus writes to Steam's config while Steam is still running.
+When Steam exits it rewrites `localconfig.vdf` from memory and wipes the change.
+ProtonPlus's restart helper then fails on NixOS, and a stale
+`~/.steam/steam.pid` / `~/.steam/steam.pipe` left by an unclean shutdown makes
+the next launch hang.
+
+**Working procedure:**
+
+1. Fully close Steam: `Steam → Exit`, or from a terminal:
+   ```bash
+   steam -shutdown
+   ```
+   Wait until no Steam process is left:
+   ```bash
+   pgrep -af '[s]team/steam' || echo 'steam closed'
+   ```
+2. Only if Steam is closed and the next launch hangs, remove the stale locks:
+   ```bash
+   rm -f ~/.steam/steam.pid ~/.steam/steam.pipe
+   ```
+   Never delete these while Steam is running.
+3. Open ProtonPlus and apply the launch options for the game.
+4. **Ignore / cancel ProtonPlus's restart prompt.** Do not let it restart Steam.
+5. Start Steam yourself:
+   ```bash
+   steam &
+   ```
+6. Verify the option was written:
+   ```bash
+   grep -n 'LaunchOptions' \
+     ~/.local/share/Steam/userdata/*/config/localconfig.vdf
+   ```
+   You should see a line containing your `gamescope … %command%` string.
+7. Launch the game. A `gamescope` window/compositor starting means the option
+   took effect.
+
+If the `LaunchOptions` line is still missing after step 6, close Steam again and
+repeat — the config was overwritten because Steam was not fully closed at
+step 3.
+
 ---
 
 ## 4. Xwayland — Steam would not start under niri
